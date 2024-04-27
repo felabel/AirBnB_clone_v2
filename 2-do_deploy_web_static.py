@@ -1,34 +1,34 @@
 #!/usr/bin/python3
-from fabric.api import put, run, local, env
-from os import path
+"""
+Fabric script for distributing an archive to web servers
+"""
+from fabric.api import *
+import os
 
-
-env.hosts = ["54.160.120.123", "100.25.10.125"]
-
+env.hosts = ['54.160.120.123', '100.25.10.125']
 
 def do_deploy(archive_path):
-    """Fabric script that distributes
-    an archive to your web server"""
-
-    if not path.exists(archive_path):
+    """
+    Distributes an archive to web servers using Fabric
+    """
+    if os.path.isfile(archive_path) is False:
         return False
     try:
-        tgzfile = archive_path.split("/")[-1]
-        print(tgzfile)
-        filename = tgzfile.split(".")[0]
-        print(filename)
-        pathname = "/data/web_static/releases/" + filename
-        put(archive_path, '/tmp/')
-        run("mkdir -p /data/web_static/releases/{}/".format(filename))
-        run("tar -zxvf /tmp/{} -C /data/web_static/releases/{}/"
-            .format(tgzfile, filename))
-        run("rm /tmp/{}".format(tgzfile))
-        run("mv /data/web_static/releases/{}/web_static/*\
-            /data/web_static/releases/{}/".format(filename, filename))
-        run("rm -rf /data/web_static/releases/{}/web_static".format(filename))
+        archive = archive_path.split("/")[-1]
+        path = "/data/web_static/releases"
+        put("{}".format(archive_path), "/tmp/{}".format(archive))
+        folder = archive.split(".")
+        run("mkdir -p {}/{}/".format(path, folder[0]))
+        new_archive = '.'.join(folder)
+        run("tar -xzf /tmp/{} -C {}/{}/"
+            .format(new_archive, path, folder[0]))
+        run("rm /tmp/{}".format(archive))
+        run("mv {}/{}/web_static/* {}/{}/"
+            .format(path, folder[0], path, folder[0]))
+        run("rm -rf {}/{}/web_static".format(path, folder[0]))
         run("rm -rf /data/web_static/current")
-        run("ln -s /data/web_static/releases/{}/ /data/web_static/current"
-            .format(filename))
+        run("ln -sf {}/{} /data/web_static/current"
+            .format(path, folder[0]))
         return True
-    except Exception as e:
+    except:
         return False
